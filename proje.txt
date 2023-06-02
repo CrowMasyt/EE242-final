@@ -1,0 +1,113 @@
+Referans(
+https://github.com/gsahinpi
+https://github.com/yasintuncel?page=1
+Talha Tuncel-20180701046
+)
+Batihan asciinum= 66+97 +116+ 105 +104 +97 +110+ 32=727
+Malkocoglu asciinum= 77 +97 +108 +107 +111 +99 +111 +103 +108 +117=1038
+
+pininput= 727(%15)=7
+pinoutput=1038(%15)=3
+
+#include "stm32f4xx_hal.h"
+#include "usb_device.h"
+
+/* USB CDC handler */
+extern USBD_HandleTypeDef hUsbDeviceFS;
+
+/* GPIO pins */
+#define INPUT_PIN  GPIO_PIN_7
+#define OUTPUT_PIN GPIO_PIN_3
+#define GPIO_PORT  GPIOA
+
+
+/* Buffer for input string */
+#define BUFFER_SIZE 256
+char inputBuffer[BUFFER_SIZE];
+int inputIndex = 0;
+
+/* USB CDC receive callback */
+void CDC_ReceiveCallback(uint8_t* buf, uint32_t len)
+{
+  for (int i = 0; i < len; i++)
+  {
+    inputBuffer[inputIndex++] = buf[i];
+    if (inputIndex >= BUFFER_SIZE)
+      break;
+  }
+}
+
+int main(void)
+{
+  /* Initialize HAL */
+  HAL_Init();
+
+  /* Initialize USB CDC */
+  MX_USB_DEVICE_Init();
+
+  /* Configure GPIO pins */
+  GPIO_InitTypeDef GPIO_InitStruct;
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  GPIO_InitStruct.Pin = INPUT_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIO_PORT, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = OUTPUT_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIO_PORT, &GPIO_InitStruct);
+
+  /* Main loop */
+  while (1)
+  {
+    /* Check for incoming data from USB CDC */
+    if (CDC_Receive_FS(inputBuffer, BUFFER_SIZE) == USBD_OK)
+    {
+      for (int i = 0; i < BUFFER_SIZE; i++)
+      {
+          char data = inputBuffer[i];
+          for (int j = 0; j < 8; j++)
+          {
+              HAL_GPIO_WritePin(GPIO_PORT, OUTPUT_PIN, data & (0x01 << j) == 0 ? GPIO_PIN_RESET : GPIO_PIN_SET);
+              HAL_Delay(1);
+          }
+      }
+
+      /* Echo the output string through USB CDC */
+      CDC_Transmit_FS(inputBuffer, inputIndex);
+
+      /* Reset input buffer and index */
+      memset(inputBuffer, 0, BUFFER_SIZE);
+      inputIndex = 0;
+    }
+  }
+}
+
+
+
+/* Check for incoming data from USB CDC */
+	    if (CDC_Receive_FS(inputBuffer, BUFFER_SIZE) == USBD_OK)
+	    {
+	      for (int i = 0; i < BUFFER_SIZE; i++)
+	      {
+	          char data = inputBuffer[i];
+	          for (int j = 0; j < 8; j++)
+	          {
+	              HAL_GPIO_WritePin(GPIO_PORT, OUTPUT_PIN, data & (0x01 << j) == 0 ? GPIO_PIN_RESET : GPIO_PIN_SET);
+	              
+	              HAL_Delay(1);
+	          }
+	      }
+
+	      /* Echo the output string through USB CDC */
+	      CDC_Transmit_FS(inputBuffer, inputIndex);
+
+	      /* Reset input buffer and index */
+	      memset(inputBuffer, 0, BUFFER_SIZE);
+	      inputIndex = 0;
+	    }
+	  }
+
+
